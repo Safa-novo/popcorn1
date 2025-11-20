@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import SelectedMovieDetails from "./SelectedMovieDetails";
 import Loader from "./Loader";
-import { KEY } from "./KEY";
+//import { KEY } from "./KEY";
 import ErrorMessage from "./ErrorMessage";
 import NavBar from "./NavBar";
 import Search from "./Search";
@@ -10,20 +10,24 @@ import List from "./List";
 import MovieList from "./MovieList";
 import Summary from "./Summary";
 import WatchedList from "./WatchedList";
+import { useMovies } from "./useMovies";
 
 export const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
 export default function App() {
   const [query, setQuery] = useState("");
-
-  const [movies, setMovies] = useState([]);
-
-  const [watched, setWatched] = useState([]);
-
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
   const [selectedId, setSelectedId] = useState(null);
+
+  const { movies, isLoading, error } = useMovies(query, handleCloseMovie);
+
+  // const [watched, setWatched] = useState([]);
+
+  ///local storage
+  const [watched, setWatched] = useState(function () {
+    const storedValue = localStorage.getItem("watched");
+    return JSON.parse(storedValue);
+  });
 
   function handleSelectMovie(id) {
     setSelectedId((SelectedId) => (id === selectedId ? null : id));
@@ -37,38 +41,12 @@ export default function App() {
   function handleDeleteWatched(id) {
     setWatched((watched) => watched.filter((movie) => movie.imdbID !== id));
   }
-
+  //effect for local storage
   useEffect(
     function () {
-      async function FetchMovies() {
-        try {
-          setIsLoading(true);
-          setError("");
-          const res = await fetch(
-            `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`
-          );
-
-          if (!res.ok) throw new Error("Somthing went wrong with ");
-
-          const data = await res.json();
-          if (data.Response === "False") throw new Error("Movie not found");
-
-          setMovies(data.Search);
-        } catch (err) {
-          console.error(err);
-          setError(err.message);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-      if (!query.length) {
-        setMovies([]);
-        setError("");
-        return;
-      }
-      FetchMovies();
+      localStorage.setItem("watched", JSON.stringify(watched));
     },
-    [query]
+    [watched]
   );
 
   return (
@@ -90,7 +68,6 @@ export default function App() {
         </List>
 
         <List>
-          selected
           {selectedId ? (
             <SelectedMovieDetails
               selectedId={selectedId}
